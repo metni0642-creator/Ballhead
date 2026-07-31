@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>BALLHEAD PROTOCOL — Fight</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+  <div id="app">
+    <div id="stage">
+      <canvas id="game" width="960" height="540"></canvas>
+
+      <div id="hud">
+        <div id="hudTop">
+          <span class="lives">♥ <span id="lives">3</span></span>
+          <span class="shield-hud hidden" id="shieldHud">◈ SHIELD</span>
+          <span class="score">Score <span id="score">0</span></span>
+          <span class="level" id="levelTag">World</span>
+          <span class="phase" id="phase">Form I</span>
+        </div>
+        <div id="bossMeta">
+          <span id="bossLabel">BOSS</span>
+          <span id="bossHpText">100%</span>
+        </div>
+        <div id="bossBarWrap"><div id="bossBarFill"></div></div>
+        <div id="superWrap">
+          <span id="superLabel">STAND STILL 1.5s</span>
+          <div id="superBar"><div id="superFill"></div></div>
+        </div>
+      </div>
+
+      <div id="topActions">
+        <button type="button" class="icon-btn" id="pauseBtn" aria-label="Pause">II</button>
+      </div>
+
+      <div id="overlay">
+        <div class="panel">
+          <h1 id="panelTitle">Engage</h1>
+          <p id="panelSub">Shared lives. Arm SUPER by standing still 1.5s.</p>
+          <p class="hint" id="panelHint">A/D · W · Space · Shift · F SUPER</p>
+          <p class="hint" id="pcHints">Esc / P pause · Enter start</p>
+          <div class="actions">
+            <button type="button" class="btn" id="btnPrimary">Fight</button>
+            <button type="button" class="btn btn-ghost hidden" id="btnSecondary">Menu</button>
+            <button type="button" class="btn btn-magenta hidden" id="btnTertiary">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" id="superBtn" aria-label="Super attack"><span>SUPER</span></button>
+
+    <div id="dock">
+      <div class="stick-zone" id="stickZone">
+        <div id="stickBase"></div>
+        <div id="stickKnob"></div>
+      </div>
+      <div class="action-zone">
+        <div class="ctrl-btn" id="jumpBtn"><span>Jump</span></div>
+        <div class="ctrl-btn" id="dashBtn"><span>Dash</span></div>
+        <div class="ctrl-btn" id="shootBtn"><span>Fire</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

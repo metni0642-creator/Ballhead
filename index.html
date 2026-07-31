@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>BALLHEAD PROTOCOL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body class="menu-page">
+  <main class="menu">
+    <header class="menu-hero">
+      <p class="menu-kicker">32 bosses · 8 worlds · 12 operators</p>
+      <h1 class="menu-brand">BALLHEAD</h1>
+      <p class="menu-tag">Unique supers per fighter. Shared lives. Stand still to ready SUPER.</p>
+    </header>
+
+    <div class="score-strip">
+      <div class="stat-chip">Best score <strong id="bestTotal">0</strong></div>
+      <div class="stat-chip">Worlds unlocked <strong id="unlockedLabel">1 / 8</strong></div>
+    </div>
+
+    <section class="menu-panel char-select-panel" style="margin-bottom:22px">
+      <h2>Choose operator</h2>
+      <div class="char-select-layout">
+        <div class="char-preview-wrap">
+          <canvas id="charPreview" width="420" height="260" aria-label="Character preview"></canvas>
+          <div class="char-preview-meta">
+            <h3 id="previewName">Pulse</h3>
+            <p id="previewTrait">Balanced</p>
+            <p class="super-line" id="previewSuper"><strong>SUPER</strong> — Pulse Beam</p>
+            <p class="hint-line" id="previewSuperDesc">Classic horizontal energy beam</p>
+          </div>
+        </div>
+        <div class="char-grid" id="charGrid"></div>
+      </div>
+    </section>
+
+    <div class="menu-actions">
+      <a class="btn" id="startBtn" href="#">Start Run</a>
+      <button type="button" class="btn btn-ghost" id="resetScores">Reset Progress</button>
+    </div>
+
+    <section class="menu-panel" style="margin-bottom:18px">
+      <h2>Worlds</h2>
+      <p class="hint-line">Early worlds ease you in. Later worlds stay brutal. Lives reset when you begin a run.</p>
+    </section>
+    <section class="level-grid" id="worldGrid"></section>
+
+    <section class="menu-panel">
+      <h2>Protocol</h2>
+      <ul>
+        <li><strong>Lives</strong> are shared across all bosses in a run.</li>
+        <li><strong>Minions</strong> are labeled drones — rarely drop powerups (speed / damage / invuln / fire rate for 2s).</li>
+        <li><strong>SUPER:</strong> stand still to ready it instantly, then F / SUPER. Cooldown <strong>7s</strong>. Each operator has a unique super.</li>
+        <li><strong>PC:</strong> A/D · W jump · Space fire · Shift dash · F super</li>
+        <li><strong>Phone:</strong> stick · JUMP · DASH · FIRE · SUPER</li>
+      </ul>
+    </section>
+  </main>
+  <script src="js/data.js"></script>
+  <script>
+    const KEY = BHB.STORAGE;
+    function load(){
+      try { return Object.assign({ bestTotal:0, unlockedWorld:1 }, JSON.parse(localStorage.getItem(KEY)||'{}')); }
+      catch { return { bestTotal:0, unlockedWorld:1 }; }
+    }
+    const data = load();
+    let selected = localStorage.getItem('bhb_char') || 'pulse';
+    let previewFrame = 0;
+    let superCycle = 0;
+    let hitFlash = 0;
+
+    document.getElementById('bestTotal').textContent = data.bestTotal|0;
+    document.getElementById('unlockedLabel').textContent = Math.min(8, data.unlockedWorld|1) + ' / 8';
+
+    const grid = document.getElementById('charGrid');
+    const canvas = document.getElementById('charPreview');
+    const ctx = canvas.getContext('2d');
+
+    function updatePreviewMeta(){
+      const c = BHB.getChar(selected);
+      document.getElementById('previewName').textContent = c.name;
+      document.getElementById('previewTrait').textContent = c.trait;
+      document.getElementById('previewSuper').innerHTML = '<strong>SUPER</strong> — ' + c.superName;
+      document.getElementById('previewSuperDesc').textContent = c.superDesc;
+    }
+
+    function drawPreview(){
+      previewFrame++;
+      superCycle = (superCycle + 0.0065) % 1;
+      if (hitFlash > 0) hitFlash = Math.max(0, hitFlash - 0.04);
+
+      const c = BHB.getChar(selected);
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#0c1428');
+      g.addColorStop(1, '#060810');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+
+      // floor
+      ctx.strokeStyle = c.accent + '66';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(24, 214); ctx.lineTo(W - 24, 214); ctx.stroke();
+
+      const charX = 78, charY = 138;
+      const targetX = 330, targetY = 120;
+
+      // dartboard first (behind FX that pass over it)
+      const flash = hitFlash;
+      BHB.drawDartTarget(ctx, targetX, targetY, 52, flash);
+
+      // super FX
+      const hit = BHB.drawSuperPreview(ctx, c, charX + 20, charY - 4, targetX, targetY, superCycle);
+      if (hit > hitFlash) hitFlash = hit;
+
+      // character on left (drawn after beam start so they stay readable)
+      BHB.drawCharPreview(ctx, c, charX, charY, previewFrame);
+
+      // caption
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = '600 10px Exo 2,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('SUPER DEMO →', W / 2, 248);
+
+      requestAnimationFrame(drawPreview);
+    }
+
+    function renderChars(){
+      grid.innerHTML = '';
+      BHB.CHARS.forEach(c => {
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'char-card' + (c.id === selected ? ' selected' : '');
+        el.style.setProperty('--glow', c.accent);
+        el.innerHTML = `<span class="swatch" style="background:${c.head}"></span>
+          <strong>${c.name}</strong>
+          <small>${c.superName}</small>`;
+        el.onclick = () => {
+          selected = c.id;
+          localStorage.setItem('bhb_char', selected);
+          superCycle = 0;
+          hitFlash = 0;
+          updatePreviewMeta();
+          renderChars();
+          updateStart();
+        };
+        grid.appendChild(el);
+      });
+      updatePreviewMeta();
+    }
+
+    function updateStart(world){
+      const w = world || 1;
+      document.getElementById('startBtn').href =
+        'game.html?char=' + encodeURIComponent(selected) + '&world=' + w + '&new=1';
+    }
+
+    const worldGrid = document.getElementById('worldGrid');
+    BHB.WORLDS.forEach((w, i) => {
+      const unlocked = (data.unlockedWorld|1) >= (i+1);
+      const el = document.createElement(unlocked ? 'a' : 'div');
+      el.className = 'level-card' + (unlocked ? '' : ' locked');
+      el.style.setProperty('--glow', w.glow);
+      if (unlocked) {
+        el.href = '#';
+        el.onclick = (e) => {
+          e.preventDefault();
+          selected = localStorage.getItem('bhb_char') || selected;
+          location.href = 'game.html?char=' + encodeURIComponent(selected) + '&world=' + (i+1) + '&new=1';
+        };
+      }
+      el.innerHTML = `<span class="lv">World 0${i+1}</span>
+        <h3>${w.name}</h3>
+        <p>${unlocked ? w.blurb + ' · 4 bosses' : 'Clear previous world to unlock'}</p>
+        <span class="best">${unlocked ? 'Enter' : 'LOCKED'}</span>`;
+      worldGrid.appendChild(el);
+    });
+
+    document.getElementById('startBtn').onclick = (e) => {
+      e.preventDefault();
+      location.href = 'game.html?char=' + encodeURIComponent(selected) + '&world=1&new=1';
+    };
+
+    document.getElementById('resetScores').onclick = () => {
+      if (confirm('Reset unlocks and high scores?')) {
+        localStorage.removeItem(KEY);
+        sessionStorage.removeItem('bhb_run_v3');
+        location.reload();
+      }
+    };
+
+    renderChars();
+    updateStart(1);
+    drawPreview();
+  </script>
+</body>
+</html>
